@@ -1,0 +1,991 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>BoB Currency Chest</title>
+
+    <!-- Custom fonts for this template-->
+    <link href="{% static 'vendor/fontawesome-free/css/all.min.css' %}" rel="stylesheet" type="text/css">
+    <link
+        href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
+        rel="stylesheet">
+
+    <!-- Custom styles for this template-->
+    <link href="{%static 'css/sb-admin-2.min.css'%}" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js">
+    </script>
+
+    <script>
+        function CreatePDFfromHTML() {
+            var HTML_Width = $("#content-wrapper").width();
+            var HTML_Height = $("#content-wrapper").height();
+            var top_left_margin = 15;
+            var PDF_Width = HTML_Width + (top_left_margin * 2);
+            var PDF_Height = (PDF_Width * 1.5) + (top_left_margin * 2);
+            var canvas_image_width = HTML_Width;
+            var canvas_image_height = HTML_Height;
+
+            var totalPDFPages = Math.ceil(HTML_Height / PDF_Height) - 1;
+
+            html2canvas($("#content-wrapper")[0]).then(function (canvas) {
+                var imgData = canvas.toDataURL("image/jpeg", 1.0);
+                var pdf = new jsPDF('p', 'pt', [PDF_Width, PDF_Height]);
+                pdf.addImage(imgData, 'JPG', top_left_margin, top_left_margin, canvas_image_width, canvas_image_height);
+                for (var i = 1; i <= totalPDFPages; i++) {
+                    pdf.addPage(PDF_Width, PDF_Height);
+                    pdf.addImage(imgData, 'JPG', top_left_margin, -(PDF_Height * i) + (top_left_margin * 4), canvas_image_width, canvas_image_height);
+                }
+                pdf.save("Report.pdf");
+                $("#content-wrapper").hide();
+            });
+        }
+    </script>
+
+</head>
+
+<body id="page-top">
+
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+
+        <!-- Sidebar -->
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+
+            <!-- Sidebar - Brand -->
+            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="index.html">
+                <div class="sidebar-brand-icon rotate-n-15">
+                    <i class="fas fa-fw fa-tachometer-alt"></i>
+
+                </div>
+                <div class="sidebar-brand-text mx-3">BoB Dashboard</div>
+            </a>
+
+            <!-- Divider -->
+            <hr class="sidebar-divider my-0">
+
+
+            <!-- Divider -->
+            <hr class="sidebar-divider">
+
+            <!-- Heading -->
+            <div class="sidebar-heading">
+                Get Detailed Report
+            </div>
+
+            <!-- Nav Item - Pages Collapse Menu -->
+            <li class="nav-item p-3">
+                <form class="row bg-primary  rounded-5 shadow" enctype="multipart/form-data" action="/evaluate"
+                    method="POST"> {% csrf_token %}
+
+                    <div class="col-auto p-1 ">
+                        <select class="form-select form-control" name="chest" aria-label="Default select example"
+                            required>
+                            <option selected>Select currency chest</option>
+                            <option value="MMO">MMO</option>
+                            <option value="BKC">BKC</option>
+                            <option value="BHANDUP">BHANDUP</option>
+                            <option value="GOREGAON CC">GOREGAON CC</option>
+                        </select>
+                    </div>
+
+                    <div class="col-auto p-1 ">
+                        <label for="data" class=" text-white">Upload File</label>
+                        <input id="fileSelect" class="form-control" type="file" name="data"
+                            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                            required />
+                    </div>
+
+                    <div class="col-auto p-1 ">
+                        <label for="rate" class=" text-white">Business growth Projection</label>
+                        <input type="text" name="bgp" class="form-control" placeholder="1.05" autocomplete="off"
+                            required />
+                    </div>
+
+                    <div class="col-auto p-1 ">
+                        <label for="rate" class="text-white">Replenishment horizon (days)</label>
+                        <input type="text" name="rh" class="form-control" placeholder="2" autocomplete="off" required />
+                    </div>
+
+                    <div class="col-auto p-1 ">
+                        <label for="rate" class="text-white">Default probability</label>
+                        <input type="text" name="dp" class="form-control" placeholder="4.5" autocomplete="off"
+                            required />
+                    </div>
+
+
+                    <hr class="sidebar-divider">
+
+                    <div class="col-auto p-1 ">
+                        <label for="rate" class="text-white">2000 Currency %</label>
+                        <input type="number" name="twok" class="form-control" placeholder="5" autocomplete="off"
+                            required />
+                    </div>
+                    <div class="col-auto p-1 ">
+                        <label for="rate" class="text-white">500 Currency %</label>
+                        <input type="number" name="fiveh" class="form-control" placeholder="25" autocomplete="off"
+                            required />
+                    </div>
+                    <div class="col-auto p-1 ">
+                        <label for="rate" class="text-white">200 Currency %</label>
+                        <input type="number" name="twoh" class="form-control" placeholder="20" autocomplete="off"
+                            required />
+                    </div>
+                    <div class="col-auto p-1 ">
+                        <label for="rate" class="text-white">100 Currency %</label>
+                        <input type="number" name="oneh" class="form-control" placeholder="25" autocomplete="off"
+                            required />
+                    </div>
+                    <div class="col-auto p-1 ">
+                        <label for="rate" class="text-white">50 Currency %</label>
+                        <input type="number" name="fifty" class="form-control" placeholder="5" autocomplete="off"
+                            required />
+                    </div>
+                    <div class="col-auto p-1 ">
+                        <label for="rate" class="text-white">20 Currency %</label>
+                        <input type="number" name="twenty" class="form-control" placeholder="10" autocomplete="off"
+                            required />
+                    </div>
+                    <div class="col-auto p-1">
+                        <label for="rate" class="text-white">10 Currency %</label>
+                        <input type="number" name="ten" class="form-control" placeholder="10" autocomplete="off"
+                            required />
+                    </div>
+
+
+                    <div class="col-auto my-3">
+                        <button type="submit" class="btn btn-warning mb-3">Submit</button>
+                    </div>
+                </form>
+            </li>
+
+
+
+
+        </ul>
+        <!-- End of Sidebar -->
+
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+
+            <!-- Main Content -->
+            <div id="content">
+
+                <!-- Topbar -->
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+
+                    <!-- Sidebar Toggle (Topbar) -->
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                        <i class="fa fa-bars"></i>
+                    </button>
+
+                    <!-- Topbar Search -->
+                    <form
+                        class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search">
+                        <div class="input-group">
+                            <input type="text" class="form-control bg-light border-0 small" placeholder="Search for..."
+                                aria-label="Search" aria-describedby="basic-addon2">
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" type="button">
+                                    <i class="fas fa-search fa-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Topbar Navbar -->
+                    <ul class="navbar-nav ml-auto">
+
+                        <!-- Nav Item - Search Dropdown (Visible Only XS) -->
+                        <li class="nav-item dropdown no-arrow d-sm-none">
+                            <a class="nav-link dropdown-toggle" href="#" id="searchDropdown" role="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-search fa-fw"></i>
+                            </a>
+                            <!-- Dropdown - Messages -->
+                            <div class="dropdown-menu dropdown-menu-right p-3 shadow animated--grow-in"
+                                aria-labelledby="searchDropdown">
+                                <form class="form-inline mr-auto w-100 navbar-search">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control bg-light border-0 small"
+                                            placeholder="Search for..." aria-label="Search"
+                                            aria-describedby="basic-addon2">
+                                        <div class="input-group-append">
+                                            <button class="btn btn-primary" type="button">
+                                                <i class="fas fa-search fa-sm"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </li>
+
+                        <!-- Nav Item - Alerts -->
+                        <li class="nav-item dropdown no-arrow mx-1">
+                            <a class="nav-link dropdown-toggle" href="#" id="alertsDropdown" role="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-bell fa-fw"></i>
+                                <!-- Counter - Alerts -->
+                                <span class="badge badge-danger badge-counter">5+</span>
+                            </a>
+                            <!-- Dropdown - Alerts -->
+                            <div class="dropdown-list dropdown-menu dropdown-menu-right shadow animated--grow-in"
+                                aria-labelledby="alertsDropdown">
+                                <h6 class="dropdown-header">
+                                    Alerts Center
+                                </h6>
+                                <a class="dropdown-item d-flex align-items-center" href="#">
+                                    <div class="mr-3">
+                                        <div class="icon-circle bg-primary">
+                                            <i class="fas fa-file-alt text-white"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="small text-gray-500">December 12, 2019</div>
+                                        <span class="font-weight-bold">A new monthly report is ready to download!</span>
+                                    </div>
+                                </a>
+                                <a class="dropdown-item d-flex align-items-center" href="#">
+                                    <div class="mr-3">
+                                        <div class="icon-circle bg-success">
+                                            <i class="fas fa-donate text-white"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="small text-gray-500">December 7, 2019</div>
+                                        $290.29 has been deposited into your account!
+                                    </div>
+                                </a>
+                                <a class="dropdown-item d-flex align-items-center" href="#">
+                                    <div class="mr-3">
+                                        <div class="icon-circle bg-warning">
+                                            <i class="fas fa-exclamation-triangle text-white"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="small text-gray-500">December 2, 2019</div>
+                                        Spending Alert: We've noticed unusually high spending for your account.
+                                    </div>
+                                </a>
+                                <a class="dropdown-item text-center small text-gray-500" href="#">Show All Alerts</a>
+                            </div>
+                        </li>
+
+                        <!-- Nav Item - Messages -->
+                        <li class="nav-item dropdown no-arrow mx-1">
+                            <a class="nav-link dropdown-toggle" href="#" id="messagesDropdown" role="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-envelope fa-fw"></i>
+                                <!-- Counter - Messages -->
+                                <span class="badge badge-danger badge-counter">10+</span>
+                            </a>
+                            <!-- Dropdown - Messages -->
+                            <div class="dropdown-list dropdown-menu dropdown-menu-right shadow animated--grow-in"
+                                aria-labelledby="messagesDropdown">
+                                <h6 class="dropdown-header">
+                                    Message Center
+                                </h6>
+                                <a class="dropdown-item d-flex align-items-center" href="#">
+                                    <div class="dropdown-list-image mr-3">
+                                        <img class="rounded-circle" src="{%static 'img/undraw_profile_1.svg'%}"
+                                            alt="...">
+                                        <div class="status-indicator bg-success"></div>
+                                    </div>
+                                    <div class="font-weight-bold">
+                                        <div class="text-truncate">Hi there! I am wondering if you can help me with a
+                                            problem I've been having.</div>
+                                        <div class="small text-gray-500">Emily Fowler · 58m</div>
+                                    </div>
+                                </a>
+                                <a class="dropdown-item d-flex align-items-center" href="#">
+                                    <div class="dropdown-list-image mr-3">
+                                        <img class="rounded-circle" src="{%static 'img/undraw_profile_2.svg'%}"
+                                            alt="...">
+                                        <div class="status-indicator"></div>
+                                    </div>
+                                    <div>
+                                        <div class="text-truncate">I have the photos that you ordered last month, how
+                                            would you like them sent to you?</div>
+                                        <div class="small text-gray-500">Jae Chun · 1d</div>
+                                    </div>
+                                </a>
+                                <a class="dropdown-item d-flex align-items-center" href="#">
+                                    <div class="dropdown-list-image mr-3">
+                                        <img class="rounded-circle" src="{%static 'img/undraw_profile_3.svg'%}"
+                                            alt="...">
+                                        <div class="status-indicator bg-warning"></div>
+                                    </div>
+                                    <div>
+                                        <div class="text-truncate">Last month's report looks great, I am very happy with
+                                            the progress so far, keep up the good work!</div>
+                                        <div class="small text-gray-500">Morgan Alvarez · 2d</div>
+                                    </div>
+                                </a>
+                                <a class="dropdown-item d-flex align-items-center" href="#">
+                                    <div class="dropdown-list-image mr-3">
+                                        <img class="rounded-circle" src="https://source.unsplash.com/Mv9hjnEUHR4/60x60"
+                                            alt="...">
+                                        <div class="status-indicator bg-success"></div>
+                                    </div>
+                                    <div>
+                                        <div class="text-truncate">Am I a good boy? The reason I ask is because someone
+                                            told me that people say this to all dogs, even if they aren't good...</div>
+                                        <div class="small text-gray-500">Chicken the Dog · 2w</div>
+                                    </div>
+                                </a>
+                                <a class="dropdown-item text-center small text-gray-500" href="#">Read More Messages</a>
+                            </div>
+                        </li>
+
+                        <div class="topbar-divider d-none d-sm-block"></div>
+
+                        <!-- Nav Item - User Information -->
+                        <li class="nav-item dropdown no-arrow">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small">BOB Admin</span>
+                                <img class="img-profile rounded-circle" src="{%static 'img/undraw_profile.svg'%}">
+                            </a>
+                            <!-- Dropdown - User Information -->
+                            <!-- <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
+                                aria-labelledby="userDropdown">
+                                <a class="dropdown-item" href="#">
+                                    <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Profile
+                                </a>
+                                <a class="dropdown-item" href="#">
+                                    <i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Settings
+                                </a>
+                                <a class="dropdown-item" href="#">
+                                    <i class="fas fa-list fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Activity Log
+                                </a>
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
+                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Logout
+                                </a>
+                            </div> -->
+                        </li>
+
+                    </ul>
+
+                </nav>
+                <!-- End of Topbar -->
+
+                <!-- Begin Page Content -->
+                <div class="container-fluid">
+
+                    <!-- Page Heading -->
+                    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                        <h1 class="h3 mb-0 text-gray-800">{{chest}} Dashboard</h1>
+
+                        <a class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm"
+                            onclick="CreatePDFfromHTML()"><i class="fas fa-download fa-sm text-white-50"></i> Download
+                            Report</a>
+                    </div>
+
+                    <!-- Content Row -->
+                    <div class="row">
+
+                        <!-- Earnings (Monthly) Card Example -->
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-primary shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                                Total Deposit (Annually) </div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800"><span>&#8377;</span>
+                                                {{total_deposit}} Cr.</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Earnings (Monthly) Card Example -->
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-success shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                                Total Withdrawal (Annually)</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800"><span>&#8377;</span>
+                                                {{total_withdrawal}} Cr.</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Earnings (Monthly) Card Example -->
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-warning shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                                Closing Balance (Annually)</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800"><span>&#8377;</span>
+                                                {{net}} Cr.</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Earnings (Monthly) Card Example -->
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-info shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                                Net. Avg Daily </div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800"><span>&#8377;</span>
+                                                {{overall_mean}} Cr.</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <!-- Earnings (Monthly) Card Example -->
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-success shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                                Net. Std Daily</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800"><span>&#8377;</span>
+                                                {{overall_std}} Cr.</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pending Requests Card Example -->
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-warning shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                                Overall Reserve Level</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800"><span>&#8377;</span>
+                                                {{overall_rl}} Cr.</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+                        <!-- Earnings (Monthly) Card Example -->
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-info shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                                Confidence Level
+                                            </div>
+                                            <div class="row no-gutters align-items-center">
+                                                <div class="col-auto">
+                                                    <div id="cl" class="h5 mb-0 mr-3 font-weight-bold text-gray-800">
+                                                        {{cl}}%</div>
+                                                </div>
+
+                                                <div class="col">
+                                                    <div class="progress progress-sm mr-2">
+                                                        <div id="probar" class="progress-bar bg-info" role="progressbar"
+                                                            aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <script>
+                                                    const c1 = document.getElementById('cl')
+                                                    console.log(c1.innerText)
+                                                    document.getElementById('probar').style.width = c1.innerText
+                                                </script>
+                                            </div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                    </div>
+
+                    <!-- Content Row -->
+
+                    <div class="row">
+
+                        <!-- Area Chart -->
+                        <div class="col-xl-8 col-lg-7">
+                            <div class="card shadow mb-4">
+                                <!-- Card Header - Dropdown -->
+                                <div
+                                    class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h6 class="m-0 font-weight-bold text-primary">Graphical Insight</h6>
+                                   
+                                </div>
+                                <input type="hidden" id="rl1" value={{ rl.0 }}>
+                                <input type="hidden" id="rl2" value={{ rl.1 }}>
+                                <input type="hidden" id="rl3" value={{ rl.2 }}>
+                                <input type="hidden" id="rl4" value={{ rl.3 }}>
+                                <input type="hidden" id="rl5" value={{ rl.4 }}>
+                                <input type="hidden" id="rl6" value={{ rl.5 }}>
+                                <input type="hidden" id="rl7" value={{ rl.6 }}>
+                                <input type="hidden" id="rl8" value={{ rl.7 }}>
+                                <input type="hidden" id="rl9" value={{ rl.8 }}>
+                                <input type="hidden" id="rl10" value={{ rl.9 }}>
+                                <input type="hidden" id="rl11" value={{ rl.10 }}>
+                                <input type="hidden" id="rl12" value={{ rl.11 }}>
+
+                                <input type="hidden" id="date1" value={{ date.0 }}>
+                                <input type="hidden" id="date2" value={{ date.1 }}>
+                                <input type="hidden" id="date3" value={{ date.2 }}>
+                                <input type="hidden" id="date4" value={{ date.3 }}>
+                                <input type="hidden" id="date5" value={{ date.4 }}>
+                                <input type="hidden" id="date6" value={{ date.5 }}>
+                                <input type="hidden" id="date7" value={{ date.6 }}>
+                                <input type="hidden" id="date8" value={{ date.7 }}>
+                                <input type="hidden" id="date9" value={{ date.8 }}>
+                                <input type="hidden" id="date10" value={{ date.9 }}>
+                                <input type="hidden" id="date11" value={{ date.10 }}>
+                                <input type="hidden" id="date12" value={{ date.11 }}>
+
+                                <input type="hidden" id="mean1" value={{ mean.0 }}>
+                                <input type="hidden" id="mean2" value={{ mean.1 }}>
+                                <input type="hidden" id="mean3" value={{ mean.2 }}>
+                                <input type="hidden" id="mean4" value={{ mean.3 }}>
+                                <input type="hidden" id="mean5" value={{ mean.4 }}>
+                                <input type="hidden" id="mean6" value={{ mean.5 }}>
+                                <input type="hidden" id="mean7" value={{ mean.6 }}>
+                                <input type="hidden" id="mean8" value={{ mean.7 }}>
+                                <input type="hidden" id="mean9" value={{ mean.8 }}>
+                                <input type="hidden" id="mean10" value={{ mean.9 }}>
+                                <input type="hidden" id="mean11" value={{ mean.10}}>
+                                <input type="hidden" id="mean12" value={{ mean.11 }}>
+
+                                <input type="hidden" id="std1" value={{ std.0 }}>
+                                <input type="hidden" id="std2" value={{ std.1 }}>
+                                <input type="hidden" id="std3" value={{ std.2 }}>
+                                <input type="hidden" id="std4" value={{ std.3 }}>
+                                <input type="hidden" id="std5" value={{ std.4 }}>
+                                <input type="hidden" id="std6" value={{ std.5 }}>
+                                <input type="hidden" id="std7" value={{ std.6 }}>
+                                <input type="hidden" id="std8" value={{ std.7 }}>
+                                <input type="hidden" id="std9" value={{ std.8 }}>
+                                <input type="hidden" id="std10" value={{ std.9}}>
+                                <input type="hidden" id="std11" value={{ std.10}}>
+                                <input type="hidden" id="std12" value={{ std.11 }}>
+
+                                <!-- Card Body -->
+                                <div class="card-body">
+                                    <div class="chart-area" style="height: fit-content;">
+                                        <canvas id="myLineChart"></canvas>
+                                        <script>
+                                            d1 = document.querySelector('#date1').value
+                                            d2 = document.querySelector('#date2').value
+                                            d3 = document.querySelector('#date3').value
+                                            d4 = document.querySelector('#date4').value
+                                            d5 = document.querySelector('#date5').value
+                                            d6 = document.querySelector('#date6').value
+                                            d7 = document.querySelector('#date7').value
+                                            d8 = document.querySelector('#date8').value
+                                            d9 = document.querySelector('#date9').value
+                                            d10 = document.querySelector('#date10').value
+                                            d11 = document.querySelector('#date11').value
+                                            d12 = document.querySelector('#date12').value
+                                            var xValues = [d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12];
+
+                                            m1 = document.querySelector('#mean1').value
+                                            m2 = document.querySelector('#mean2').value
+                                            m3 = document.querySelector('#mean3').value
+                                            m4 = document.querySelector('#mean4').value
+                                            m5 = document.querySelector('#mean5').value
+                                            m6 = document.querySelector('#mean6').value
+                                            m7 = document.querySelector('#mean7').value
+                                            m8 = document.querySelector('#mean8').value
+                                            m9 = document.querySelector('#mean9').value
+                                            m10 = document.querySelector('#mean10').value
+                                            m11 = document.querySelector('#mean11').value
+                                            m12 = document.querySelector('#mean12').value
+
+                                            s1 = document.querySelector('#std1').value
+                                            s2 = document.querySelector('#std2').value
+                                            s3 = document.querySelector('#std3').value
+                                            s4 = document.querySelector('#std4').value
+                                            s5 = document.querySelector('#std5').value
+                                            s6 = document.querySelector('#std6').value
+                                            s7 = document.querySelector('#std7').value
+                                            s8 = document.querySelector('#std8').value
+                                            s9 = document.querySelector('#std9').value
+                                            s10 = document.querySelector('#std10').value
+                                            s11 = document.querySelector('#std11').value
+                                            s12 = document.querySelector('#std12').value
+
+                                            new Chart("myLineChart", {
+                                                type: "line",
+                                                data: {
+                                                    labels: xValues,
+                                                    datasets: [{
+                                                        label: 'Mean',
+                                                        data: [m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12],
+                                                        borderColor: "#4e73df",
+                                                        fill: false
+                                                    }, {
+                                                        label: 'Std',
+                                                        data: [s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12],
+                                                        borderColor: "#1cc88a",
+                                                        fill: false,
+                                                    }]
+                                                },
+                                                options: {
+                                                    legend: { display: true },
+                                                    title: {
+                                                        display: true,
+                                                        text: 'Daily Change (Categorized by Month in Crores)'
+                                                    },
+                                                    scales: {
+                                                        yAxes: [{
+                                                            scaleLabel: {
+                                                                display: true,
+                                                                // labelString: 'probability',
+                                                                fontSize: 25,
+                                                            }
+                                                        }],
+                                                        xAxes: [{
+                                                            scaleLabel: {
+                                                                display: true,
+                                                                labelString: 'Months',
+                                                                fontSize: 25,
+                                                            }
+                                                        }],
+                                                    }
+                                                }
+                                            });
+                                        </script>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pie Chart -->
+                        <div class="col-xl-4 col-lg-5">
+                            <div class="card shadow mb-4">
+                                <!-- Card Header - Dropdown -->
+                                <div
+                                    class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h6 class="m-0 font-weight-bold text-primary">Currency Denomination Chart</h6>
+                                   
+                                </div>
+                                <!-- Card Body -->
+                                <input type="hidden" id="note1" value={{ twok }}>
+                                <input type="hidden" id="note2" value={{ fiveh }}>
+                                <input type="hidden" id="note3" value={{ twoh }}>
+                                <input type="hidden" id="note4" value={{ oneh }}>
+                                <input type="hidden" id="note5" value={{ fifty }}>
+                                <input type="hidden" id="note6" value={{ twenty }}>
+                                <input type="hidden" id="note7" value={{ ten }}>
+                                <div class="card-body  " style="height: 430px;">
+                                    <div class="chart-pie  " style="height: fit-content;">
+                                        <canvas id="myDoughnutChart" width="500" height="490"></canvas>
+                                        <script>
+                                            n1 = document.querySelector('#note1').value
+                                            n2 = document.querySelector('#note2').value
+                                            n3 = document.querySelector('#note3').value
+                                            n4 = document.querySelector('#note4').value
+                                            n5 = document.querySelector('#note5').value
+                                            n6 = document.querySelector('#note6').value
+                                            n7 = document.querySelector('#note7').value
+
+                                            new Chart("myDoughnutChart", {
+                                                type: 'doughnut',
+                                                data: {
+                                                    datasets: [
+                                                        {
+                                                            data: [n1, n2, n3, n4, n5, n6, n7],
+                                                            backgroundColor: [
+                                                                '#4e73df',
+                                                                '#1cc88a',
+                                                                '#36b9cc',
+                                                                "#858796",
+                                                                '#e74a3b',
+                                                                '#f6c23e',
+                                                                "#5a5c69"
+                                                            ],
+                                                        },
+                                                    ],
+                                                    labels: ['2000 Rs Notes', '500 Rs Notes', '200 Rs Notes', '100 Rs Notes', '50 Rs Notes', '20 Rs Notes', '10 Rs Notes'],
+                                                },
+                                                options: {
+                                                    cutoutPercentage: 60,
+                                                    legend: { display: false },
+                                                    title: {
+                                                        display: true,
+                                                        text: 'Currency Denomination Wise Reserve-level (In Crores)'
+                                                    },
+
+                                                },
+                                            });
+                                        </script>
+                                    </div>
+                                    <!-- <div class="mt-4 text-center small">
+                                        <span class="mr-2">
+                                            <i class="fas fa-circle text-primary"></i> Direct
+                                        </span>
+                                        <span class="mr-2">
+                                            <i class="fas fa-circle text-success"></i> Social
+                                        </span>
+                                        <span class="mr-2">
+                                            <i class="fas fa-circle text-info"></i> Referral
+                                        </span>
+                                    </div> -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="row">
+
+                        <!-- Area Chart -->
+                        <div class="col-xl-12 col-lg-11">
+                            <div class="card shadow mb-4">
+                                <!-- Card Header - Dropdown -->
+                                <div
+                                    class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h6 class="m-0 font-weight-bold text-primary">Graphical Insight</h6>
+                                   
+                                </div>
+
+                                <!-- Card Body -->
+                                <div class="card-body">
+                                    <div class="chart-area" style="height: fit-content;">
+                                        <canvas id="myChart"></canvas>
+                                        <script>
+                                            d1 = document.querySelector('#date1').value
+                                            d2 = document.querySelector('#date2').value
+                                            d3 = document.querySelector('#date3').value
+                                            d4 = document.querySelector('#date4').value
+                                            d5 = document.querySelector('#date5').value
+                                            d6 = document.querySelector('#date6').value
+                                            d7 = document.querySelector('#date7').value
+                                            d8 = document.querySelector('#date8').value
+                                            d9 = document.querySelector('#date9').value
+                                            d10 = document.querySelector('#date10').value
+                                            d11 = document.querySelector('#date11').value
+                                            d12 = document.querySelector('#date12').value
+                                            var xValues = [d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12];
+                                            console.log(xValues)
+
+                                            v1 = document.querySelector('#rl1').value
+                                            v2 = document.querySelector('#rl2').value
+                                            v3 = document.querySelector('#rl3').value
+                                            v4 = document.querySelector('#rl4').value
+                                            v5 = document.querySelector('#rl5').value
+                                            v6 = document.querySelector('#rl6').value
+                                            v7 = document.querySelector('#rl7').value
+                                            v8 = document.querySelector('#rl8').value
+                                            v9 = document.querySelector('#rl9').value
+                                            v10 = document.querySelector('#rl10').value
+                                            v11 = document.querySelector('#rl11').value
+                                            v12 = document.querySelector('#rl12').value
+                                            var yValues = [v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12];
+
+                                            var barColors = ["rgb(123,128,246)", "rgb(3,57,108)", "rgb(100,151,177)", "rgb(0,91,150)", 'rgb(76,222,222)', 'rgb(33,49,152)', 'rgb(29,168,236)', 'rgb(230,61,98)', 'rgb(24,29,125)', 'rgb(35,116,179)', 'rgb(3,232,255)', 'rgb(255,212,178)'];
+
+                                            new Chart("myChart", {
+                                                type: "bar",
+                                                data: {
+                                                    labels: xValues,
+                                                    datasets: [{
+                                                        backgroundColor: barColors,
+                                                        data: yValues
+                                                    }]
+                                                },
+                                                options: {
+                                                    legend: { display: false },
+                                                    title: {
+                                                        display: true,
+                                                        text: 'Safety Reserve Level'
+                                                    },
+                                                    scales: {
+                                                        yAxes: [{
+                                                            scaleLabel: {
+                                                                display: true,
+                                                                labelString: 'Reserve Level',
+                                                                fontSize: 25,
+                                                            }
+                                                        }],
+                                                        xAxes: [{
+                                                            scaleLabel: {
+                                                                display: true,
+                                                                labelString: 'Months',
+                                                                fontSize: 25,
+                                                            }
+                                                        }],
+                                                    }
+                                                }
+                                            });
+                                        </script>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Content Row -->
+                    <div class="row">
+
+                        <!-- Content Column -->
+                        <div class="col-lg-12 mb-4">
+
+                            <!-- Project Card Example -->
+                            <div class="card shadow mb-4">
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-primary">Denomination Wise Reserve-level (Monthly)</h6>
+                                </div>
+                                <div class="card-body">
+                                        <table class="table">
+                                            <thead class="thead-dark" >
+                                                <tr>
+                                                    <th scope="col">Month</th>
+                                                    <th scope="col">Reserve Level 2000</th>
+                                                    <th scope="col">Reserve Level 500</th>
+                                                    <th scope="col">Reserve Level 200</th>
+                                                    <th scope="col">Reserve Level 100</th>
+                                                    <th scope="col">Reserve Level 50</th>
+                                                    <th scope="col">Reserve Level 20</th>
+                                                    <th scope="col">Reserve Level 10</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {%for item in rld%}
+                                                
+                                                <tr class="bg-white">
+                                                    {% for val in item %}
+                                                    <td class="text-info font-weight-bold text-center">{{val}}</td>
+                                                    {% endfor %}
+                                                </tr>
+                                                {% endfor %}
+                                               
+                                            </tbody>
+                                        </table>
+                                        
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <!-- /.container-fluid -->
+
+            </div>
+            <!-- End of Main Content -->
+
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; Bank of Baroda Innovation Center, IIT Bombay</span>
+                    </div>
+                </div>
+            </footer>
+            <!-- End of Footer -->
+
+        </div>
+        <!-- End of Content Wrapper -->
+
+    </div>
+    <!-- End of Page Wrapper -->
+
+    <!-- Scroll to Top Button-->
+    <a class="scroll-to-top rounded" href="#page-top">
+        <i class="fas fa-angle-up"></i>
+    </a>
+
+    <!-- Logout Modal-->
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Ready to Leave?</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">Select "Logout" below if you are ready to end your current session.</div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
+                    <a class="btn btn-primary" href="login.html">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap core JavaScript-->
+    <script src="{%static 'vendor/jquery/jquery.min.js'%}"></script>
+    <script src="{%static 'vendor/bootstrap/js/bootstrap.bundle.min.js'%}"></script>
+
+    <!-- Core plugin JavaScript-->
+    <script src="{%static 'vendor/jquery-easing/jquery.easing.min.js'%}"></script>
+
+    <!-- Custom scripts for all pages-->
+    <script src="{% static 'js/sb-admin-2.min.js'%}"></script>
+
+    <!-- Page level plugins -->
+    <script src="{%static 'vendor/chart.js/Chart.min.js'%}"></script>
+
+    <!-- Page level custom scripts -->
+    <script src="{%static 'js/demo/chart-area-demo.js'%}"></script>
+    <script src="{%static 'js/demo/chart-pie-demo.js'%}"></script>
+
+    <!-- Pdf generater -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.min.js"></script>
+    <script type="text/javascript" src="https://html2canvas.hertzen.com/dist/html2canvas.js"></script>
+</body>
+
+</html>
